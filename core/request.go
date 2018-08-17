@@ -4,6 +4,7 @@ package core
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -103,7 +104,7 @@ func (r *RequestAccessor) StripBasePath(basePath string) string {
 // stage variables and API Gateway context. To access these properties use
 // the GetAPIGatewayStageVars and GetAPIGatewayContext method of the RequestAccessor
 // object.
-func (r *RequestAccessor) ProxyEventToHTTPRequest(req events.APIGatewayProxyRequest) (*http.Request, error) {
+func (r *RequestAccessor) ProxyEventToHTTPRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*http.Request, error) {
 	decodedBody := []byte(req.Body)
 	if req.IsBase64Encoded {
 		base64Body, err := base64.StdEncoding.DecodeString(req.Body)
@@ -171,5 +172,5 @@ func (r *RequestAccessor) ProxyEventToHTTPRequest(req events.APIGatewayProxyRequ
 	httpRequest.Header.Add(APIGwContextHeader, string(apiGwContext))
 	httpRequest.Header.Add(APIGwStageVarsHeader, string(stageVars))
 
-	return httpRequest, nil
+	return httpRequest.WithContext(ctx), nil
 }

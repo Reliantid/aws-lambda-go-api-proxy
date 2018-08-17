@@ -1,12 +1,14 @@
 package core_test
 
 import (
+	"context"
 	"encoding/base64"
 	"io/ioutil"
 	"math/rand"
 
+	"github.com/Reliantid/aws-lambda-go-api-proxy/core"
+
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/awslabs/aws-lambda-go-api-proxy/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,10 +16,11 @@ import (
 
 var _ = Describe("RequestAccessor tests", func() {
 	Context("event conversion", func() {
+		ctx := context.Background()
 		accessor := core.RequestAccessor{}
 		basicRequest := getProxyRequest("/hello", "GET")
 		It("Correctly converts a basic event", func() {
-			httpReq, err := accessor.ProxyEventToHTTPRequest(basicRequest)
+			httpReq, err := accessor.ProxyEventToHTTPRequest(ctx, basicRequest)
 			Expect(err).To(BeNil())
 			Expect("/hello").To(Equal(httpReq.URL.Path))
 			Expect("GET").To(Equal(httpReq.Method))
@@ -25,7 +28,7 @@ var _ = Describe("RequestAccessor tests", func() {
 
 		basicRequest = getProxyRequest("/hello", "get")
 		It("Converts method to uppercase", func() {
-			httpReq, err := accessor.ProxyEventToHTTPRequest(basicRequest)
+			httpReq, err := accessor.ProxyEventToHTTPRequest(ctx, basicRequest)
 			Expect(err).To(BeNil())
 			Expect("/hello").To(Equal(httpReq.URL.Path))
 			Expect("GET").To(Equal(httpReq.Method))
@@ -44,7 +47,7 @@ var _ = Describe("RequestAccessor tests", func() {
 		binaryRequest.IsBase64Encoded = true
 
 		It("Decodes a base64 encoded body", func() {
-			httpReq, err := accessor.ProxyEventToHTTPRequest(binaryRequest)
+			httpReq, err := accessor.ProxyEventToHTTPRequest(ctx, binaryRequest)
 			Expect(err).To(BeNil())
 			Expect("/hello").To(Equal(httpReq.URL.Path))
 			Expect("POST").To(Equal(httpReq.Method))
@@ -62,7 +65,7 @@ var _ = Describe("RequestAccessor tests", func() {
 			"world": "2",
 		}
 		It("Populates query string correctly", func() {
-			httpReq, err := accessor.ProxyEventToHTTPRequest(qsRequest)
+			httpReq, err := accessor.ProxyEventToHTTPRequest(ctx, qsRequest)
 			Expect(err).To(BeNil())
 			Expect("/hello").To(Equal(httpReq.URL.Path))
 			Expect("GET").To(Equal(httpReq.Method))
@@ -81,7 +84,7 @@ var _ = Describe("RequestAccessor tests", func() {
 
 		It("Stips the base path correct", func() {
 			accessor.StripBasePath("app1")
-			httpReq, err := accessor.ProxyEventToHTTPRequest(basePathRequest)
+			httpReq, err := accessor.ProxyEventToHTTPRequest(ctx, basePathRequest)
 			Expect(err).To(BeNil())
 			Expect("/orders").To(Equal(httpReq.URL.Path))
 		})
@@ -90,7 +93,7 @@ var _ = Describe("RequestAccessor tests", func() {
 		contextRequest.RequestContext = getRequestContext()
 
 		It("Populates context header correctly", func() {
-			httpReq, err := accessor.ProxyEventToHTTPRequest(contextRequest)
+			httpReq, err := accessor.ProxyEventToHTTPRequest(ctx, contextRequest)
 			Expect(err).To(BeNil())
 			Expect(2).To(Equal(len(httpReq.Header)))
 			Expect(httpReq.Header.Get(core.APIGwContextHeader)).ToNot(BeNil())
@@ -117,11 +120,12 @@ var _ = Describe("RequestAccessor tests", func() {
 
 	Context("Retrieves API Gateway context", func() {
 		It("Returns a correctly unmarshalled object", func() {
+			ctx := context.Background()
 			contextRequest := getProxyRequest("orders", "GET")
 			contextRequest.RequestContext = getRequestContext()
 
 			accessor := core.RequestAccessor{}
-			httpReq, err := accessor.ProxyEventToHTTPRequest(contextRequest)
+			httpReq, err := accessor.ProxyEventToHTTPRequest(ctx, contextRequest)
 			Expect(err).To(BeNil())
 
 			context, err := accessor.GetAPIGatewayContext(httpReq)
@@ -134,11 +138,12 @@ var _ = Describe("RequestAccessor tests", func() {
 		})
 
 		It("Populates stage variables correctly", func() {
+			ctx := context.Background()
 			varsRequest := getProxyRequest("orders", "GET")
 			varsRequest.StageVariables = getStageVariables()
 
 			accessor := core.RequestAccessor{}
-			httpReq, err := accessor.ProxyEventToHTTPRequest(varsRequest)
+			httpReq, err := accessor.ProxyEventToHTTPRequest(ctx, varsRequest)
 			Expect(err).To(BeNil())
 
 			stageVars, err := accessor.GetAPIGatewayStageVars(httpReq)
