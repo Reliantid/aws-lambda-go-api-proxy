@@ -6,8 +6,8 @@ package chiadapter
 import (
 	"net/http"
 
+	"github.com/Reliantid/aws-lambda-go-api-proxy/core"
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/awslabs/aws-lambda-go-api-proxy/core"
 	"github.com/go-chi/chi"
 )
 

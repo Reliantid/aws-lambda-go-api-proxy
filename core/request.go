@@ -30,9 +30,11 @@ const APIGwContextHeader = "X-GoLambdaProxy-ApiGw-Context"
 const APIGwStageVarsHeader = "X-GoLambdaProxy-ApiGw-StageVars"
 
 // RequestAccessor objects give access to custom API Gateway properties
-// in the request.
+// in the request. ServerAddress should be the full URI of the
+// service.
 type RequestAccessor struct {
 	stripBasePath string
+	ServerAddress string
 }
 
 // GetAPIGatewayContext extracts the API Gateway context object from a
@@ -134,7 +136,11 @@ func (r *RequestAccessor) ProxyEventToHTTPRequest(req events.APIGatewayProxyRequ
 		}
 	}
 
-	path = DefaultServerAddress + path
+	if r.ServerAddress != "" && len(r.ServerAddress) > 1 {
+		path = r.ServerAddress + path
+	} else {
+		path = DefaultServerAddress + path
+	}
 
 	httpRequest, err := http.NewRequest(
 		strings.ToUpper(req.HTTPMethod),
